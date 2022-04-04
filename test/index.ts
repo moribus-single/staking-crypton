@@ -196,6 +196,8 @@ describe("Staking", function () {
 
 
         // CHECKING WITHDRAW
+
+        // USER #1
         let beforeBalance = await token.balanceOf(
             await users[1].getAddress()
         );
@@ -207,14 +209,11 @@ describe("Staking", function () {
         );
 
         expect(
-            afterBalance.sub(beforeBalance).eq(
-                BigNumber.from("232")
-            )
-        ).to.be.true;
+            afterBalance.sub(beforeBalance)
+        ).to.be.eq("232");
 
 
-        console.log("User2 withdraw");
-            
+        // USER #2    
         beforeBalance = await token.balanceOf(
             await users[2].getAddress()
         );
@@ -227,10 +226,40 @@ describe("Staking", function () {
         
         console.log(afterBalance, beforeBalance, afterBalance.sub(beforeBalance))
         expect(
-            afterBalance.sub(beforeBalance).eq(
-                BigNumber.from("238")
-            )
-        ).to.be.true;
+            afterBalance.sub(beforeBalance)
+        ).to.be.eq("238");
+
+        
+        // USER #3
+        beforeBalance = await token.balanceOf(
+            await users[3].getAddress()
+        );
+
+        await contract.connect(users[3]).claim();
+
+        afterBalance = await token.balanceOf(
+            await users[3].getAddress()
+        );
+
+        expect(
+            afterBalance.sub(beforeBalance)
+        ).to.be.eq("152")
+
+
+        // USER #4
+        beforeBalance = await token.balanceOf(
+            await users[4].getAddress()
+        );
+
+        await contract.connect(users[4]).claim();
+
+        afterBalance = await token.balanceOf(
+            await users[4].getAddress()
+        );
+
+        expect(
+            afterBalance.sub(beforeBalance)
+        ).to.be.eq("377")
     });
 
     it("withdraw", async () => {

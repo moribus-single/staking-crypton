@@ -19,7 +19,6 @@ contract Staking is IStaking {
         uint256 totalAmount;
         uint256 missedRewards;
         uint256 allowedRewards;
-        uint256 availableRewards;
         uint256 claimed;
     }
 
@@ -56,7 +55,6 @@ contract Staking is IStaking {
         Staker storage user = users[msg.sender];
         user.totalAmount += value;
         user.missedRewards += value * stakingInfo.tps;
-        user.availableRewards += (user.totalAmount * stakingInfo.tps - user.missedRewards) / PRESICION - user.allowedRewards;
 
         stakingInfo.totalStaked += value;
 
@@ -67,23 +65,21 @@ contract Staking is IStaking {
         _updateState();
 
         Staker storage user = users[msg.sender];
-        user.availableRewards = user.totalAmount * stakingInfo.tps - user.missedRewards;
-        
+        uint256 availableRewards = (user.totalAmount * stakingInfo.tps - user.missedRewards) / PRESICION + user.allowedRewards;
+
         IERC20(stakingInfo.token).transfer(
             msg.sender, 
-            user.availableRewards / PRESICION + user.allowedRewards
+            availableRewards
         );
 
-        user.claimed += user.availableRewards / PRESICION + user.allowedRewards;
+        user.claimed += availableRewards / PRESICION + user.allowedRewards;
         user.allowedRewards = 0;
-        user.availableRewards = 0;
 
         return true;
     }
 
     function unstake(uint256 value) external returns (bool) {
         _updateState();
-        stakingInfo.totalStaked -= value;
 
         Staker storage user = users[msg.sender];
         require(
@@ -99,6 +95,7 @@ contract Staking is IStaking {
         );
 
         user.totalAmount -= value;
+        stakingInfo.totalStaked -= value;
 
         return true;
     }
