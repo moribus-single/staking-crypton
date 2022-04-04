@@ -60,7 +60,6 @@ contract Staking is IStaking {
         Staker storage user = users[msg.sender];
         user.totalAmount += value;
         user.missedRewards += value * stakingInfo.tps;
-        console.log("new reward =", (user.totalAmount * stakingInfo.tps - user.missedRewards) / stakingInfo.decimals - user.gainRewards);
         user.availableRewards += (user.totalAmount * stakingInfo.tps - user.missedRewards) / stakingInfo.decimals - user.gainRewards;
 
         stakingInfo.totalStaked += value;
@@ -97,7 +96,6 @@ contract Staking is IStaking {
         );
 
         user.gainRewards = value * stakingInfo.tps / stakingInfo.decimals; 
-        console.log("gained =", user.gainRewards);
 
         IERC20(stakingInfo.token).transfer(
             msg.sender,
@@ -119,7 +117,6 @@ contract Staking is IStaking {
         _updateState();
 
         Staker storage user = users[msg.sender];
-        console.log("tps =", stakingInfo.tps);
         user.availableRewards = (stakingInfo.tps * user.totalAmount - user.missedRewards) / stakingInfo.decimals - user.claimed;
 
         return user;
