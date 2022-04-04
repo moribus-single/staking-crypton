@@ -10,18 +10,15 @@ contract Staking is IStaking {
         address token;
         uint256 epochReward;
         uint256 epochDuration;
-        uint256 rewardProduced;
         uint256 totalStaked;
         uint256 tps;
-        uint256 timeInit;
         uint256 lastUpdated;
-        uint256 decimals;
     }
 
     struct Staker {
         uint256 totalAmount;
         uint256 missedRewards;
-        uint256 gainRewards;
+        uint256 allowedRewards;
         uint256 availableRewards;
         uint256 claimed;
     }
@@ -29,6 +26,8 @@ contract Staking is IStaking {
     StakingInfo public stakingInfo;
 
     mapping(address => Staker) public users;
+
+    uint256 constant public PRESICION = 10 ** 18;
 
     constructor(
         address _token, 
@@ -39,12 +38,9 @@ contract Staking is IStaking {
             token: _token,
             epochReward: _reward,
             epochDuration: _epochDuration * 3600,
-            rewardProduced: 100,
             totalStaked: 0,
             tps: 0,
-            timeInit: block.timestamp,
-            lastUpdated: block.timestamp,
-            decimals: 10 ** 18
+            lastUpdated: block.timestamp
         });
     }
 
@@ -60,14 +56,14 @@ contract Staking is IStaking {
         Staker storage user = users[msg.sender];
         user.totalAmount += value;
         user.missedRewards += value * stakingInfo.tps;
-        user.availableRewards += (user.totalAmount * stakingInfo.tps - user.missedRewards) / stakingInfo.decimals - user.gainRewards;
+        user.availableRewards += (user.totalAmount * stakingInfo.tps - user.missedRewards) / PRESICION - user.allowedRewards;
 
         stakingInfo.totalStaked += value;
 
         return true;
     }
 
-    function withdraw() external override returns (bool) {
+    function claim() external override returns (bool) {
         _updateState();
 
         Staker storage user = users[msg.sender];
@@ -75,11 +71,11 @@ contract Staking is IStaking {
         
         IERC20(stakingInfo.token).transfer(
             msg.sender, 
-            user.availableRewards / stakingInfo.decimals + user.gainRewards
+            user.availableRewards / PRESICION + user.allowedRewards
         );
 
-        user.claimed = user.availableRewards / stakingInfo.decimals + user.gainRewards;
-        user.gainRewards = 0;
+        user.claimed += user.availableRewards / PRESICION + user.allowedRewards;
+        user.allowedRewards = 0;
         user.availableRewards = 0;
 
         return true;
@@ -95,7 +91,7 @@ contract Staking is IStaking {
             "not enough to unstake"
         );
 
-        user.gainRewards = value * stakingInfo.tps / stakingInfo.decimals; 
+        user.allowedRewards += value * stakingInfo.tps / PRESICION; 
 
         IERC20(stakingInfo.token).transfer(
             msg.sender,
@@ -107,28 +103,15 @@ contract Staking is IStaking {
         return true;
     }
 
-    function TPS() external returns (uint256) {
-        _updateState();
-
-        return stakingInfo.tps;
-    }
-
-    function user() external returns (Staker memory info) {
-        _updateState();
-
-        Staker storage user = users[msg.sender];
-        uint256 available = (stakingInfo.tps * user.totalAmount - user.missedRewards) / stakingInfo.decimals;
-        user.availableRewards = available > user.claimed ? (available - user.claimed) : 0;
-
-        return user;
+    function getInfo() external view returns (Staker memory info) {
+        return users[msg.sender];
     }
 
     function _updateState() internal {
         uint256 offset = (block.timestamp - stakingInfo.lastUpdated) / stakingInfo.epochDuration;
 
         if (offset > 0) {
-            stakingInfo.rewardProduced += offset * stakingInfo.epochReward;
-            stakingInfo.tps += offset * stakingInfo.epochReward * stakingInfo.decimals / stakingInfo.totalStaked;
+            stakingInfo.tps += offset * stakingInfo.epochReward * PRESICION / stakingInfo.totalStaked;
             stakingInfo.lastUpdated = block.timestamp;
         }
     }

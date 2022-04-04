@@ -13,5 +13,5 @@ interface IStaking {
     /**
      * @dev moves all of the rewards to the sender
      */
-    function withdraw() external returns (bool);
+    function claim() external returns (bool);
 }
