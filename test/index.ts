@@ -191,7 +191,7 @@ describe("Staking", function () {
 
         user1 = await contract.connect(users[1]).callStatic.user();
         expect(user1[2]).to.be.eq(0);                                         // missed = 0
-        expect(user1[3]).to.be.eq(BigNumber.from("161"));   // available = 0.16103896103896103
+        expect(user1[3]).to.be.eq(BigNumber.from("161"));   // available = 161.03896103896103
 
         await contract.connect(users[1]).stake(1500);
 
@@ -216,8 +216,8 @@ describe("Staking", function () {
         );
 
         user1 = await contract.connect(users[1]).callStatic.user();
-        expect(user1[1]).to.be.eq(BigNumber.from("227272727272727271000"));   // missed = 0.227272727272727271000
-        expect(user1[3]).to.be.eq(BigNumber.from("196"));   // available = 0.196158008658008654000
+        expect(user1[1]).to.be.eq(BigNumber.from("241558441558441555500"));   // missed = 241.558441558441555500
+        expect(user1[3]).to.be.eq(BigNumber.from("181"));   // available = 181
 
         expect(
             (await contract.stakingInfo())[4]
@@ -240,8 +240,8 @@ describe("Staking", function () {
         );
 
         user1 = await contract.connect(users[1]).callStatic.user();
-        expect(user1[1]).to.be.eq(BigNumber.from("227272727272727271000"));   // missed = 0.227272727272727271000
-        expect(user1[3]).to.be.eq(BigNumber.from("216"));   // available = 0.216991341991341986500
+        expect(user1[1]).to.be.eq(BigNumber.from("241558441558441555500"));   // missed = 241.558441558441555500
+        expect(user1[3]).to.be.eq(BigNumber.from("202"));   // available = 202
 
         await contract.connect(users[2]).stake(5000);
         await contract.connect(users[3]).stake(1000);
@@ -267,8 +267,8 @@ describe("Staking", function () {
         );
 
         user1 = await contract.connect(users[1]).callStatic.user();
-        expect(user1[1]).to.be.eq(BigNumber.from("227272727272727271000"));   // missed = 0.227272727272727271000
-        expect(user1[3]).to.be.eq(BigNumber.from("230"));   // available = 0.230880230880230874000
+        expect(user1[1]).to.be.eq(BigNumber.from("241558441558441555500"));   // missed = 241.558441558441555500
+        expect(user1[3]).to.be.eq(BigNumber.from("216"));   // available = 216
 
         await contract.connect(users[4]).stake(30000);
         
@@ -293,8 +293,8 @@ describe("Staking", function () {
         );
 
         user1 = await contract.connect(users[1]).callStatic.user();
-        expect(user1[1]).to.be.eq(BigNumber.from("227272727272727271000"));   // missed = 0.227272727272727271000
-        expect(user1[3]).to.be.eq(BigNumber.from("236"));   // available = 0.236088564213564206500
+        expect(user1[1]).to.be.eq(BigNumber.from("241558441558441555500"));   // missed = 241.558441558441555500
+        expect(user1[3]).to.be.eq(BigNumber.from("221"));   // available = 221
         
         expect(
             await contract.callStatic.TPS()
@@ -313,8 +313,8 @@ describe("Staking", function () {
         ).to.be.eq(BigNumber.from("187427849927849924"));
 
         user1 = await contract.connect(users[1]).callStatic.user();
-        expect(user1[1]).to.be.eq(BigNumber.from("227272727272727271000"));   // missed = 0.227272727272727271000
-        expect(user1[3]).to.be.eq(BigNumber.from("241"));   // available = 0.241296897546897539000
+        expect(user1[1]).to.be.eq(BigNumber.from("241558441558441555500"));   // missed = 241.558441558441555500
+        expect(user1[3]).to.be.eq(BigNumber.from("227"));   // available = 227
         
         expect(
             (await contract.stakingInfo())[4]
@@ -346,8 +346,8 @@ describe("Staking", function () {
         );
 
         user1 = await contract.connect(users[1]).callStatic.user();
-        expect(user1[1]).to.be.eq(BigNumber.from("227272727272727271000"));   // missed = 0.227272727272727271000
-        expect(user1[3]).to.be.eq(BigNumber.from("246"));   // available = 0.246505230880230871500
+        expect(user1[1]).to.be.eq(BigNumber.from("241558441558441555500"));   // missed = 241.558441558441555500
+        expect(user1[3]).to.be.eq(BigNumber.from("232"));   // available = 232
 
         expect(
             (await contract.stakingInfo())[4]
@@ -367,7 +367,7 @@ describe("Staking", function () {
 
         expect(
             afterBalance.sub(beforeBalance).eq(
-                BigNumber.from("246")
+                BigNumber.from("232")
             )
         ).to.be.true;
 
@@ -387,16 +387,81 @@ describe("Staking", function () {
         console.log(afterBalance, beforeBalance, afterBalance.sub(beforeBalance))
         expect(
             afterBalance.sub(beforeBalance).eq(
-                BigNumber.from("246505230880230871500")
+                BigNumber.from("238")
             )
         ).to.be.true;
 
-        const user2 = await contract.connect(users[2]).callStatic.user();
-        expect(user2[2]).to.be.eq(BigNumber.from("10885281"));   // missed = 0.227272727272727271000
-        expect(user2[3]).to.be.eq(BigNumber.from("238"));   // available = 0.246505230880230871500
+        let user2 = await contract.connect(users[2]).callStatic.user();
+        console.log(user2);
+
+        expect(user2[1]).to.be.eq(BigNumber.from("1088528138528138515000"));   // missed = 108.8528138528138515000
+        expect(user2[3]).to.be.eq(BigNumber.from("0"));   // available = 238
     });
 
     it("withdraw", async () => {
+        let beforeBalance = await token.balanceOf(
+            await users[1].getAddress()
+        );
+
+        await contract.connect(users[1]).stake(1000);
+
+        let afterBalance = await token.balanceOf(
+            await users[1].getAddress()
+        );
+
+        expect(
+            beforeBalance.sub(afterBalance)
+        ).to.be.eq(1000);
+
+        await ethers.provider.send("evm_increaseTime", [86401]);     // 1 days 
+        await ethers.provider.send("evm_mine", []);
+
+        console.log("\nEPOCH #1");
         
+        let user = await contract.connect(users[1]).callStatic.user();
+        expect(
+            user[3]
+        ).to.be.eq(100);    // reward = 100
+        console.log(
+            user
+        );
+        
+        beforeBalance = await token.balanceOf(
+            await users[1].getAddress()
+        );
+
+        await contract.connect(users[1]).unstake(500)
+
+        afterBalance = await token.balanceOf(
+            await users[1].getAddress()
+        );
+
+        expect(
+            afterBalance.sub(beforeBalance)
+        ).to.be.eq(500);
+
+        await ethers.provider.send("evm_increaseTime", [86400]);     // 1 days 
+        await ethers.provider.send("evm_mine", []);
+
+        console.log("\nEPOCH #2");
+
+        user = await contract.connect(users[1]).callStatic.user();
+        console.log(
+            user
+        );
+
+        beforeBalance = await token.balanceOf(
+            await users[1].getAddress()
+        );
+
+        await contract.connect(users[1]).withdraw()
+
+        afterBalance = await token.balanceOf(
+            await users[1].getAddress()
+        );
+
+        expect(
+            afterBalance.sub(beforeBalance)
+        ).to.be.eq(200)
     })
 });
