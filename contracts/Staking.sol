@@ -78,7 +78,7 @@ contract Staking is IStaking {
             user.availableRewards / stakingInfo.decimals + user.gainRewards
         );
 
-        user.claimed = user.availableRewards / stakingInfo.decimals;
+        user.claimed = user.availableRewards / stakingInfo.decimals + user.gainRewards;
         user.gainRewards = 0;
         user.availableRewards = 0;
 
@@ -117,7 +117,8 @@ contract Staking is IStaking {
         _updateState();
 
         Staker storage user = users[msg.sender];
-        user.availableRewards = (stakingInfo.tps * user.totalAmount - user.missedRewards) / stakingInfo.decimals - user.claimed;
+        uint256 available = (stakingInfo.tps * user.totalAmount - user.missedRewards) / stakingInfo.decimals;
+        user.availableRewards = available > user.claimed ? (available - user.claimed) : 0;
 
         return user;
     }

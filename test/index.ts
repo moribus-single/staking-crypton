@@ -463,5 +463,10 @@ describe("Staking", function () {
         expect(
             afterBalance.sub(beforeBalance)
         ).to.be.eq(200)
+
+        user = await contract.connect(users[1]).callStatic.user();
+        console.log(
+            user
+        );
     })
 });
