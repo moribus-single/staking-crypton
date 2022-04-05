@@ -138,7 +138,10 @@ contract Staking is IStaking {
     function getRewards() external view returns (uint256) {
         Staker storage user = users[msg.sender];
 
-        uint256 totalRewards = (user.totalAmount * stakingInfo.tps - user.missedRewards) / PRESICION + user.allowedRewards;
+        uint256 epochId = (block.timestamp - stakingInfo.lastUpdated) / stakingInfo.epochDuration;
+        uint256 tps = stakingInfo.tps + epochId * stakingInfo.epochReward * PRESICION / stakingInfo.totalStaked;
+
+        uint256 totalRewards = (user.totalAmount * tps - user.missedRewards) / PRESICION + user.allowedRewards;
         uint256 availableRewards = totalRewards > user.claimed ? (totalRewards - user.claimed) : 0;
 
         return availableRewards;

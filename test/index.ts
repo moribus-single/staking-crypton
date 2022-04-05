@@ -300,6 +300,9 @@ describe("Staking", function () {
 
         console.log("\nEPOCH #2");
 
+        let rewards = await contract.connect(users[1]).getRewards();
+        expect(rewards).to.be.eq(200)
+
         beforeBalance = await token.balanceOf(
             await users[1].getAddress()
         );
@@ -314,7 +317,7 @@ describe("Staking", function () {
             afterBalance.sub(beforeBalance)
         ).to.be.eq(200)
 
-        const rewards = await contract.connect(users[1]).getRewards();
+        rewards = await contract.connect(users[1]).getRewards();
         expect(rewards).to.be.eq(0)
         
         // try to claim twice
