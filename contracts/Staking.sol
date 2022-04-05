@@ -131,8 +131,17 @@ contract Staking is IStaking {
     /**
      * @dev Returns the information about user.
      */
-    function getInfo() external view returns (Staker memory info) {
+    function getInfo() external view returns (Staker memory) {
         return users[msg.sender];
+    }
+
+    function getRewards() external view returns (uint256) {
+        Staker storage user = users[msg.sender];
+
+        uint256 totalRewards = (user.totalAmount * stakingInfo.tps - user.missedRewards) / PRESICION + user.allowedRewards;
+        uint256 availableRewards = totalRewards > user.claimed ? (totalRewards - user.claimed) : 0;
+
+        return availableRewards;
     }
 
     /**
