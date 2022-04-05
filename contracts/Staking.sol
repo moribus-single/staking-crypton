@@ -5,9 +5,12 @@ import "hardhat/console.sol";
 import "./IStaking.sol";
 import "./Token.sol";
 
+/**
+ * @dev Implementation of the {IStaking} interface.
+ */
 contract Staking is IStaking {
     struct StakingInfo {
-        address token;
+        address asset;
         uint256 epochReward;
         uint256 epochDuration;
         uint256 totalStaked;
@@ -24,17 +27,26 @@ contract Staking is IStaking {
 
     StakingInfo public stakingInfo;
 
+    /**
+     * @dev Mapping of stakers of the contract.
+     */
     mapping(address => Staker) public users;
 
+    /**
+     * @dev The presicion all of the computes.
+     */
     uint256 constant public PRESICION = 10 ** 18;
 
+    /**
+     * @dev Sets the values for {stakinfInfo}.
+     */
     constructor(
         address _token, 
         uint256 _reward, 
         uint256 _epochDuration
     ) {
         stakingInfo = StakingInfo({
-            token: _token,
+            asset: _token,
             epochReward: _reward,
             epochDuration: _epochDuration * 3600,
             totalStaked: 0,
@@ -43,10 +55,13 @@ contract Staking is IStaking {
         });
     }
 
+    /**
+     * @dev See {IStaking-stake}.
+     */
     function stake(uint256 value) external override returns (bool) {
         _updateState();
 
-        Token(stakingInfo.token).transferFrom(
+        Token(stakingInfo.asset).transferFrom(
             msg.sender,
             address(this), 
             value
@@ -61,13 +76,16 @@ contract Staking is IStaking {
         return true;
     }
 
+    /**
+     * @dev See {IStaking-claim}.
+     */
     function claim() external override returns (bool) {
         _updateState();
 
         Staker storage user = users[msg.sender];
         uint256 availableRewards = (user.totalAmount * stakingInfo.tps - user.missedRewards) / PRESICION + user.allowedRewards;
 
-        IERC20(stakingInfo.token).transfer(
+        IERC20(stakingInfo.asset).transfer(
             msg.sender, 
             availableRewards
         );
@@ -78,7 +96,10 @@ contract Staking is IStaking {
         return true;
     }
 
-    function unstake(uint256 value) external returns (bool) {
+    /**
+     * @dev See {IStaking-unstake}.
+     */
+    function unstake(uint256 value) external override returns (bool) {
         _updateState();
 
         Staker storage user = users[msg.sender];
@@ -89,7 +110,7 @@ contract Staking is IStaking {
 
         user.allowedRewards += value * stakingInfo.tps / PRESICION; 
 
-        IERC20(stakingInfo.token).transfer(
+        IERC20(stakingInfo.asset).transfer(
             msg.sender,
             value
         );
@@ -100,10 +121,16 @@ contract Staking is IStaking {
         return true;
     }
 
+    /**
+     * @dev Returns the information about user.
+     */
     function getInfo() external view returns (Staker memory info) {
         return users[msg.sender];
     }
 
+    /**
+     * @dev Updates state variables - {stakingInfo.tps} and {stakingInfo.lastUpdated}
+     */
     function _updateState() internal {
         uint256 offset = (block.timestamp - stakingInfo.lastUpdated) / stakingInfo.epochDuration;
 
