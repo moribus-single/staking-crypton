@@ -313,6 +313,9 @@ describe("Staking", function () {
         expect(
             afterBalance.sub(beforeBalance)
         ).to.be.eq(200)
+
+        const rewards = await contract.connect(users[1]).getRewards();
+        expect(rewards).to.be.eq(0)
         
         // try to claim twice
         beforeBalance = await token.balanceOf(
