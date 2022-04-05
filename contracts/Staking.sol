@@ -39,7 +39,7 @@ contract Staking is IStaking {
     uint256 constant public PRESICION = 10 ** 18;
 
     /**
-     * @dev Sets the values for {stakinfInfo}.
+     * @dev Set the values for {stakinfInfo}.
      */
     constructor(
         address _token, 
@@ -130,14 +130,28 @@ contract Staking is IStaking {
     }
 
     /**
-     * @dev Returns the information about the user.
+     * @dev Set {stakingInfo.epochReward}
+     */
+    function setEpochReward(uint256 value) external {
+        stakingInfo.epochReward = value;
+    }
+
+    /**
+     * @dev Set {stakingInfo.epochDuration}
+     */
+    function setEpochDuration(uint256 amount) external {
+        stakingInfo.epochDuration = amount * 3600;
+    }
+
+    /**
+     * @dev Return the information about the user.
      */
     function getInfo() external view returns (Staker memory) {
         return users[msg.sender];
     }
 
     /**
-     * @dev Returns the actual rewards of the sender.
+     * @dev Return the actual rewards of the sender.
      */
     function getRewards() external view returns (uint256) {
         Staker storage user = users[msg.sender];
@@ -152,7 +166,7 @@ contract Staking is IStaking {
     }
 
     /**
-     * @dev Updates state variables - {stakingInfo.tps} and {stakingInfo.lastUpdated}
+     * @dev Update state variables - {stakingInfo.tps} and {stakingInfo.lastUpdated}
      */
     function _updateState() internal {
         uint256 epochId = (block.timestamp - stakingInfo.lastUpdated) / stakingInfo.epochDuration;
