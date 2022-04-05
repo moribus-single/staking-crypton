@@ -87,13 +87,13 @@ contract Staking is IStaking {
         uint256 totalRewards = (user.totalAmount * stakingInfo.tps - user.missedRewards) / PRESICION + user.allowedRewards;
         uint256 availableRewards = totalRewards > user.claimed ? (totalRewards - user.claimed) : 0;
 
-        user.claimed += availableRewards;
-        user.allowedRewards = 0;
-
         require(
             availableRewards > 0,
             "nothing to claim"
         );
+
+        user.claimed += availableRewards;
+        user.allowedRewards = 0;
 
         IERC20(stakingInfo.asset).transfer(
             msg.sender, 
