@@ -319,14 +319,8 @@ describe("Staking", function () {
             await users[1].getAddress()
         );
 
-        await contract.connect(users[1]).claim()
-
-        afterBalance = await token.balanceOf(
-            await users[1].getAddress()
-        );
-
-        expect(
-            afterBalance.sub(beforeBalance)
-        ).to.be.eq(0)
+        await expect(
+            contract.connect(users[1]).claim()
+        ).to.be.revertedWith("nothing to claim");
     })
 });
