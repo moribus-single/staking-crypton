@@ -83,14 +83,16 @@ contract Staking is IStaking {
         _updateState();
 
         Staker storage user = users[msg.sender];
-        uint256 availableRewards = (user.totalAmount * stakingInfo.tps - user.missedRewards) / PRESICION + user.allowedRewards;
+
+        uint256 totalRewards = (user.totalAmount * stakingInfo.tps - user.missedRewards) / PRESICION + user.allowedRewards;
+        uint256 availableRewards = totalRewards > user.claimed ? (totalRewards - user.claimed) : 0;
 
         IERC20(stakingInfo.asset).transfer(
             msg.sender, 
             availableRewards
         );
 
-        user.claimed += availableRewards / PRESICION + user.allowedRewards;
+        user.claimed += availableRewards;
         user.allowedRewards = 0;
 
         return true;
@@ -132,10 +134,10 @@ contract Staking is IStaking {
      * @dev Updates state variables - {stakingInfo.tps} and {stakingInfo.lastUpdated}
      */
     function _updateState() internal {
-        uint256 offset = (block.timestamp - stakingInfo.lastUpdated) / stakingInfo.epochDuration;
+        uint256 epochId = (block.timestamp - stakingInfo.lastUpdated) / stakingInfo.epochDuration;
 
-        if (offset > 0) {
-            stakingInfo.tps += offset * stakingInfo.epochReward * PRESICION / stakingInfo.totalStaked;
+        if (epochId > 0) {
+            stakingInfo.tps += epochId * stakingInfo.epochReward * PRESICION / stakingInfo.totalStaked;
             stakingInfo.lastUpdated = block.timestamp;
         }
     }

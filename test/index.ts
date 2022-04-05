@@ -313,5 +313,20 @@ describe("Staking", function () {
         expect(
             afterBalance.sub(beforeBalance)
         ).to.be.eq(200)
+        
+        // try to claim twice
+        beforeBalance = await token.balanceOf(
+            await users[1].getAddress()
+        );
+
+        await contract.connect(users[1]).claim()
+
+        afterBalance = await token.balanceOf(
+            await users[1].getAddress()
+        );
+
+        expect(
+            afterBalance.sub(beforeBalance)
+        ).to.be.eq(0)
     })
 });
