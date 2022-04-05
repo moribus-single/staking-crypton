@@ -4,14 +4,17 @@ pragma solidity ^0.8.0;
 import "hardhat/console.sol";
 import "./IStaking.sol";
 import "./Token.sol";
+import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 
 /**
  * @title Staking protocol for ERC20
  * @dev Implementation of the {IStaking} interface.
  */
 contract Staking is IStaking {
+    using SafeERC20 for IERC20;
+
     struct StakingInfo {
-        address asset;
+        IERC20 asset;
         uint256 epochReward;
         uint256 epochDuration;
         uint256 totalStaked;
@@ -42,12 +45,12 @@ contract Staking is IStaking {
      * @dev Set the values for {stakinfInfo}.
      */
     constructor(
-        address _token, 
+        address _asset, 
         uint256 _reward, 
         uint256 _epochDuration
     ) {
         stakingInfo = StakingInfo({
-            asset: _token,
+            asset: IERC20(_asset),
             epochReward: _reward,
             epochDuration: _epochDuration * 3600,
             totalStaked: 0,
@@ -59,14 +62,8 @@ contract Staking is IStaking {
     /**
      * @dev See {IStaking-stake}.
      */
-    function stake(uint256 value) external override returns (bool) {
+    function stake(uint256 value) external override {
         _updateState();
-
-        Token(stakingInfo.asset).transferFrom(
-            msg.sender,
-            address(this), 
-            value
-        );
 
         Staker storage user = users[msg.sender];
         user.totalAmount += value;
@@ -74,13 +71,23 @@ contract Staking is IStaking {
 
         stakingInfo.totalStaked += value;
 
-        return true;
+        stakingInfo.asset.safeTransferFrom(
+            msg.sender,
+            address(this), 
+            value
+        );
+
+        emit Staked(
+            msg.sender, 
+            value, 
+            user.missedRewards
+        );
     }
 
     /**
      * @dev See {IStaking-claim}.
      */
-    function claim() external override returns (bool) {
+    function claim() external override {
         _updateState();
 
         Staker storage user = users[msg.sender];
@@ -96,18 +103,21 @@ contract Staking is IStaking {
         user.claimed += availableRewards;
         user.allowedRewards = 0;
 
-        IERC20(stakingInfo.asset).transfer(
-            msg.sender, 
+        stakingInfo.asset.safeTransfer(
+            msg.sender,
             availableRewards
         );
 
-        return true;
+        emit Claimed(
+            msg.sender, 
+            availableRewards
+        );
     }
 
     /**
      * @dev See {IStaking-unstake}.
      */
-    function unstake(uint256 value) external override returns (bool) {
+    function unstake(uint256 value) external override {
         _updateState();
 
         Staker storage user = users[msg.sender];
@@ -117,16 +127,19 @@ contract Staking is IStaking {
         );
 
         user.allowedRewards += value * stakingInfo.tps / PRESICION; 
+        user.totalAmount -= value;
+        stakingInfo.totalStaked -= value;
 
-        IERC20(stakingInfo.asset).transfer(
+        stakingInfo.asset.safeTransfer(
             msg.sender,
             value
         );
 
-        user.totalAmount -= value;
-        stakingInfo.totalStaked -= value;
-
-        return true;
+        emit Unstaked(
+            msg.sender, 
+            value, 
+            user.allowedRewards
+        );
     }
 
     /**
