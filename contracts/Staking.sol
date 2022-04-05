@@ -6,6 +6,7 @@ import "./IStaking.sol";
 import "./Token.sol";
 
 /**
+ * @title Staking protocol for ERC20
  * @dev Implementation of the {IStaking} interface.
  */
 contract Staking is IStaking {
@@ -129,12 +130,15 @@ contract Staking is IStaking {
     }
 
     /**
-     * @dev Returns the information about user.
+     * @dev Returns the information about the user.
      */
     function getInfo() external view returns (Staker memory) {
         return users[msg.sender];
     }
 
+    /**
+     * @dev Returns the actual rewards of the sender.
+     */
     function getRewards() external view returns (uint256) {
         Staker storage user = users[msg.sender];
 

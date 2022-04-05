@@ -7,6 +7,7 @@ import "@typechain/hardhat";
 import "@nomiclabs/hardhat-web3";
 import "hardhat-gas-reporter";
 import "solidity-coverage";
+import "hardhat-docgen";
 
 dotenv.config();
 
