@@ -7,17 +7,12 @@ import {
     BigNumber 
 } from "ethers";
 
-require('@openzeppelin/test-helpers/configure')({
-    provider: 'http://localhost:8080',
-});
-import "@openzeppelin/test-helpers";
-import { time } from "console";
-
 describe("Staking", function () {
     const name: string = "KZ Token";
     const symbol: string = "KZT";
     const reward: number = 100;
     const epochDuration: number = 24;       // hours
+    const presicion: BigNumber = BigNumber.from(10).pow(18);
 
     let contract: Contract;
     let token: Contract;
@@ -35,7 +30,8 @@ describe("Staking", function () {
         contract = await Factory1.deploy(
             token.address,
             reward,
-            epochDuration
+            epochDuration,
+            presicion
         );
         await contract.deployed();
 
@@ -48,7 +44,7 @@ describe("Staking", function () {
             );
         }
 
-        token.mint(
+        await token.mint(
             contract.address,
             BigNumber.from("1000000000000000000000000")
         );
@@ -73,21 +69,17 @@ describe("Staking", function () {
 
     it("Staker #1", async function () {
         await contract.connect(users[1]).stake(1000);
-        console.log("user1:");
-        console.log(
-            await contract.connect(users[1]).callStatic.getInfo()
-        );
-        console.log("user2");
-        console.log(
-            await contract.connect(users[2]).callStatic.getInfo()
-        );
 
-        let user1 = await contract.connect(users[1]).callStatic.getInfo();
-        expect(user1[2]).to.be.eq(0);   // missed = 0
-        expect(user1[3]).to.be.eq(0);   // available = 0
+        let stakerInfo = await contract.connect(users[1]).getInfo();
+        let missed = stakerInfo[1];
+        let allowed = stakerInfo[2]
         
+        expect(missed).to.be.eq(0);   // missed = 0
+        expect(allowed).to.be.eq(0);   // allowed = 0
+        
+        const staked = (await contract.stakingInfo())[3];
         expect(
-            (await contract.stakingInfo())[3]
+            staked
         ).to.be.eq(1000);
 
         await ethers.provider.send("evm_increaseTime", [86401]);     // 1 days

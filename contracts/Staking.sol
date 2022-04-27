@@ -5,7 +5,7 @@ import "./IStaking.sol";
 import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 
 /**
- * @title Staking protocol for ERC20
+ * @title Staking protocol for ERC20 token.
  * @dev Implementation of the {IStaking} interface.
  */
 contract Staking is IStaking {
@@ -13,20 +13,28 @@ contract Staking is IStaking {
 
     struct StakingInfo {
         IERC20 asset;
-        uint256 epochReward;
-        uint256 epochDuration;
-        uint256 totalStaked;
+        uint256 reward;
+        uint256 duration;
+        uint256 staked;
         uint256 tps;
-        uint256 lastUpdated;
+        uint256 update;
     }
 
     struct Staker {
-        uint256 totalAmount;
-        uint256 missedRewards;
-        uint256 allowedRewards;
+        uint256 amount;
+        uint256 missed;
+        uint256 allowed;
         uint256 claimed;
     }
 
+    /**
+     * @dev The presicion all of the computes.
+     */
+    uint256 public immutable PRESICION;
+
+    /**
+     * @dev Contains essential information about staking protocol.
+     */
     StakingInfo public stakingInfo;
 
     /**
@@ -35,26 +43,24 @@ contract Staking is IStaking {
     mapping(address => Staker) public users;
 
     /**
-     * @dev The presicion all of the computes.
-     */
-    uint256 constant public PRESICION = 10 ** 18;
-
-    /**
      * @dev Set the values for {stakinfInfo}.
      */
     constructor(
         address _asset, 
         uint256 _reward, 
-        uint256 _epochDuration
+        uint256 _epochDuration,
+        uint256 _presicion
     ) {
         stakingInfo = StakingInfo({
             asset: IERC20(_asset),
-            epochReward: _reward,
-            epochDuration: _epochDuration * 3600,
-            totalStaked: 0,
+            reward: _reward,
+            duration: _epochDuration * 3600,
+            staked: 0,
             tps: 0,
-            lastUpdated: block.timestamp
+            update: block.timestamp
         });
+
+        PRESICION = _presicion;
     }
 
     /**
@@ -63,22 +69,22 @@ contract Staking is IStaking {
     function stake(uint256 value) external override {
         _updateState();
 
-        Staker storage user = users[msg.sender];
-        user.totalAmount += value;
-        user.missedRewards += value * stakingInfo.tps;
-
-        stakingInfo.totalStaked += value;
-
         stakingInfo.asset.safeTransferFrom(
             msg.sender,
             address(this), 
             value
         );
 
+        Staker storage user = users[msg.sender];
+        user.amount += value;
+        user.missed += value * stakingInfo.tps;
+
+        stakingInfo.staked += value;
+
         emit Staked(
             msg.sender, 
             value, 
-            user.missedRewards
+            user.missed
         );
     }
 
@@ -90,7 +96,7 @@ contract Staking is IStaking {
 
         Staker storage user = users[msg.sender];
 
-        uint256 totalRewards = (user.totalAmount * stakingInfo.tps - user.missedRewards) / PRESICION + user.allowedRewards;
+        uint256 totalRewards = (user.amount * stakingInfo.tps - user.missed) / PRESICION + user.allowed;
         uint256 availableRewards = totalRewards > user.claimed ? (totalRewards - user.claimed) : 0;
 
         require(
@@ -99,7 +105,7 @@ contract Staking is IStaking {
         );
 
         user.claimed += availableRewards;
-        user.allowedRewards = 0;
+        user.allowed = 0;
 
         stakingInfo.asset.safeTransfer(
             msg.sender,
@@ -120,13 +126,13 @@ contract Staking is IStaking {
 
         Staker storage user = users[msg.sender];
         require(
-            user.totalAmount >= value,
+            user.amount >= value,
             "not enough to unstake"
         );
 
-        user.allowedRewards += value * stakingInfo.tps / PRESICION; 
-        user.totalAmount -= value;
-        stakingInfo.totalStaked -= value;
+        user.allowed += value * stakingInfo.tps / PRESICION; 
+        user.amount -= value;
+        stakingInfo.staked -= value;
 
         stakingInfo.asset.safeTransfer(
             msg.sender,
@@ -136,7 +142,7 @@ contract Staking is IStaking {
         emit Unstaked(
             msg.sender, 
             value, 
-            user.allowedRewards
+            user.allowed
         );
     }
 
@@ -144,14 +150,14 @@ contract Staking is IStaking {
      * @dev Set {stakingInfo.epochReward}
      */
     function setEpochReward(uint256 value) external {
-        stakingInfo.epochReward = value;
+        stakingInfo.reward = value;
     }
 
     /**
-     * @dev Set {stakingInfo.epochDuration}
+     * @dev Set {stakingInfo.duration}
      */
     function setEpochDuration(uint256 amount) external {
-        stakingInfo.epochDuration = amount * 3600;
+        stakingInfo.duration = amount * 3600;
     }
 
     /**
@@ -167,24 +173,24 @@ contract Staking is IStaking {
     function getRewards() external view returns (uint256) {
         Staker storage user = users[msg.sender];
 
-        uint256 epochId = (block.timestamp - stakingInfo.lastUpdated) / stakingInfo.epochDuration;
-        uint256 tps = stakingInfo.tps + epochId * stakingInfo.epochReward * PRESICION / stakingInfo.totalStaked;
+        uint256 epochId = (block.timestamp - stakingInfo.update) / stakingInfo.duration;
+        uint256 tps = stakingInfo.tps + epochId * stakingInfo.reward * PRESICION / stakingInfo.staked;
 
-        uint256 totalRewards = (user.totalAmount * tps - user.missedRewards) / PRESICION + user.allowedRewards;
+        uint256 totalRewards = (user.amount * tps - user.missed) / PRESICION + user.allowed;
         uint256 availableRewards = totalRewards > user.claimed ? (totalRewards - user.claimed) : 0;
 
         return availableRewards;
     }
 
     /**
-     * @dev Update state variables - {stakingInfo.tps} and {stakingInfo.lastUpdated}
+     * @dev Update state variables - {stakingInfo.tps} and {stakingInfo.update}
      */
     function _updateState() internal {
-        uint256 epochId = (block.timestamp - stakingInfo.lastUpdated) / stakingInfo.epochDuration;
+        uint256 epochId = (block.timestamp - stakingInfo.update) / stakingInfo.duration;
 
         if (epochId > 0) {
-            stakingInfo.tps += epochId * stakingInfo.epochReward * PRESICION / stakingInfo.totalStaked;
-            stakingInfo.lastUpdated = block.timestamp;
+            stakingInfo.tps += epochId * stakingInfo.reward * PRESICION / stakingInfo.staked;
+            stakingInfo.update = block.timestamp;
         }
     }
 }
