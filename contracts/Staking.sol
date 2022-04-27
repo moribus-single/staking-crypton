@@ -20,6 +20,12 @@ contract Staking is IStaking {
         uint256 update;
     }
 
+    /**
+     * @param amount Total amount of the tokens staked by particular staker.
+     * @param missed Total amount of the missed tokens since start of protocol existence.
+     * @param allowed Total amount of the allowed tokens for claiming.
+     * @param claimed Total amount of the claimed tokens.
+     */
     struct Staker {
         uint256 amount;
         uint256 missed;
@@ -34,11 +40,27 @@ contract Staking is IStaking {
 
     /**
      * @dev Contains essential information about staking protocol.
+     * 
+     * NOTE: atributes of the struct
+     * 
+     *  reward - Reward produced in epoch.
+     *  duration - Epoch duration in hours.
+     *  staked - Total amount of tokens staked in contract.
+     *  tps - Tokens per staked one.
+     *  update - Timestamp of the last update.
      */
     StakingInfo public stakingInfo;
 
     /**
      * @dev Mapping of stakers of the contract.
+     *
+     * NOTE: atributes of the struct
+     *
+     *  amount - Total amount of the tokens staked by particular staker.
+     *  missed - Total amount of the missed tokens since start of protocol existence.
+     *  allowed - Total amount of the allowed tokens for claiming.
+     *  claimed - Total amount of the claimed tokens.
+     *
      */
     mapping(address => Staker) public users;
 
