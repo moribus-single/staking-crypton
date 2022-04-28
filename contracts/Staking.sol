@@ -20,12 +20,6 @@ contract Staking is IStaking {
         uint256 update;
     }
 
-    /**
-     * @param amount Total amount of the tokens staked by particular staker.
-     * @param missed Total amount of the missed tokens since start of protocol existence.
-     * @param allowed Total amount of the allowed tokens for claiming.
-     * @param claimed Total amount of the claimed tokens.
-     */
     struct Staker {
         uint256 amount;
         uint256 missed;
@@ -65,6 +59,16 @@ contract Staking is IStaking {
     mapping(address => Staker) public users;
 
     /**
+     * @dev Update state variables - {stakingInfo.tps} and {stakingInfo.update}
+     *
+     * NOTE: Use in functions changing state.
+     */
+    modifier updateState() {
+        _updateState();
+        _;
+    }
+
+    /**
      * @dev Set the values for {stakinfInfo}.
      */
     constructor(
@@ -88,9 +92,7 @@ contract Staking is IStaking {
     /**
      * @dev See {IStaking-stake}.
      */
-    function stake(uint256 value) external override {
-        _updateState();
-
+    function stake(uint256 value) external updateState override {
         stakingInfo.asset.safeTransferFrom(
             msg.sender,
             address(this), 
@@ -113,9 +115,7 @@ contract Staking is IStaking {
     /**
      * @dev See {IStaking-claim}.
      */
-    function claim() external override {
-        _updateState();
-
+    function claim() external updateState override {
         Staker storage user = users[msg.sender];
 
         uint256 totalRewards = (user.amount * stakingInfo.tps - user.missed) / PRESICION + user.allowed;
@@ -143,9 +143,7 @@ contract Staking is IStaking {
     /**
      * @dev See {IStaking-unstake}.
      */
-    function unstake(uint256 value) external override {
-        _updateState();
-
+    function unstake(uint256 value) external updateState override {
         Staker storage user = users[msg.sender];
         require(
             user.amount >= value,
@@ -205,7 +203,9 @@ contract Staking is IStaking {
     }
 
     /**
-     * @dev Update state variables - {stakingInfo.tps} and {stakingInfo.update}
+     * @dev Update state variables.
+     *
+     * NOTE: Called in updateState modifier
      */
     function _updateState() internal {
         uint256 epochId = (block.timestamp - stakingInfo.update) / stakingInfo.duration;
